@@ -3,11 +3,11 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.mycompany</groupId>
-	<artifactId>database</artifactId>
+	<artifactId>dev-database</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>mule-application</packaging>
 
-	<name>database</name>
+	<name>dev-database</name>
 
     <properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -30,6 +30,15 @@
 				<version>${mule.maven.plugin.version}</version>
 				<extensions>true</extensions>
 				<configuration>
+				<cloudHubDeployment>
+    <uri>https://anypoint.mulesoft.com</uri>
+    <muleVersion>4.3.0-20200824</muleVersion>
+    <username>demouser157</username>
+    <password>Demouser12345</password>
+    <environment>Sanbox</environment>
+    <applicationName>dev-database</applicationName>
+    <workerType>Micro</workerType>
+</cloudHubDeployment>
 				<sharedLibraries>
                         <sharedLibrary>
                             <groupId>mysql</groupId>
@@ -64,12 +73,6 @@
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>5.1.48</version>
-        </dependency>
-    	<dependency>
-            <groupId>com.mulesoft.modules</groupId>
-            <artifactId>mule-secure-configuration-property-module</artifactId>
-            <version>1.2.3</version>
-            <classifier>mule-plugin</classifier>
         </dependency>
     </dependencies>
 
