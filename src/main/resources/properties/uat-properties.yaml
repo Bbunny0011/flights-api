@@ -1,0 +1,16 @@
+#httpproperties
+
+http:
+ host: "0.0.0.0"
+ port: "8081"
+ path: "/uat"
+ 
+ 
+#databaseproperties
+
+database:
+   host: "mudb.learn.mulesoft.com"
+   port: "3306"
+   db: "training"  
+ 
+ 

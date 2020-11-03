@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="c0ca6d32-dcac-4b2f-a493-67deef77a737" >
+		<http:listener-connection host="${http.host}" port="${http.port}" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="11835b8d-e63d-42c1-8d27-ceb19a9cf024" >
+		<db:my-sql-connection host="${database.host}" port="${database.port}" user="${secure::database.user}" password="${secure::database.password}" database="${database.db}" />
+	</db:config>
+	<configuration-properties doc:name="Configuration properties" doc:id="45ba27d3-43e5-4594-b6b5-61e64b84c492" file="properties/${mule.env}-properties.yaml" />
+	<global-property doc:name="Global Property" doc:id="9fc5d488-882c-48f5-bbba-29e0eb369be9" name="mule.env" value="dev" />
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="b76d91bf-95c4-44be-afb7-2fdff8af6957" file="secure\secure-${mule.env}.properties" key="Demo123456789012" />
+	<flow name="databaseFlow" doc:id="44fa43dc-2cd6-426b-bd33-b0b65a47b246" >
+		<http:listener doc:name="Listener" doc:id="10426f9c-0fff-4e09-817d-a4128de0f0b1" config-ref="HTTP_Listener_config" path="${http.path}">
+			<http:response statusCode="#[vars.httpStatus]" />
+			<http:error-response statusCode="#[vars.httpStatus]" >
+				<http:body ><![CDATA[#[payload]]]></http:body>
+			</http:error-response>
+		</http:listener>
+		<set-variable value="#[attributes.queryParams.ID]" doc:name="Set Variable" doc:id="2da2c0b2-686f-43cf-85a7-e9559f5ef560" variableName="ID"/>
+		<db:select doc:name="Select" doc:id="61fe984a-f305-4667-8f01-5f974fc7da8a" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT * FROM american WHERE ID = :ID]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{'ID' : vars.ID}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="495264fb-3c57-4a15-8bb6-501634fe66c0" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+
+
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="a6e87725-2ee3-4423-8134-36ff9a949667" type="DB:BAD_SQL_SYNTAX">
+				<set-variable value="#[401]" doc:name="Set Variable" doc:id="eeb51103-c5f2-4076-9ece-f081364fc5f4" variableName="httpStatus"/>
+				<ee:transform doc:name="Transform Message" doc:id="e855205e-718c-47c4-874b-3aa67763bbf1" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	errorMessage: error.description,
+	errorMessagedeatildescriprtion: error.detailedDescription,
+	statuscode: vars.httpStatus
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="88c3130f-35ff-48b9-85ba-aef926352a9f" type="DB:CONNECTIVITY">
+				<set-variable value="#[402]" doc:name="Set Variable" doc:id="20389d58-edc8-4473-afda-7ffb70935be8" variableName="httpStatus"/>
+				<ee:transform doc:name="Transform Message" doc:id="056769b9-dabf-49d2-94d9-6e5bd51ab425" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	errorMessage: error.description,
+	errorMessagedeatildescriprtion: error.detailedDescription,
+	statuscode: vars.httpStatus
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="1646d3d3-e154-4e25-8b3f-7ce2fd70a076" type="DB:QUERY_EXECUTION">
+				<set-variable value="#[404]" doc:name="Set Variable" doc:id="3b5cd757-d8d1-4547-805b-46c6ced7c642" variableName="httpStatus"/>
+				<ee:transform doc:name="Transform Message" doc:id="c771e037-7b02-40f0-8b55-574997b9b49d" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	errorMessage: error.description,
+	errorMessagedeatildescriprtion: error.detailedDescription,
+	statuscode: vars.httpStatus
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="bd72090d-125e-4638-960e-9862fd4526fa" type="EXPRESSION">
+				<set-variable value="#[502]" doc:name="Set Variable" doc:id="2b787fa3-11c5-46cb-bad6-bf78f2188260" variableName="httpStatus"/>
+				<ee:transform doc:name="Transform Message" doc:id="45c8d738-bb7c-46c2-960a-d1c7ada5d8aa" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	errorMessage: error.description,
+	errorMessagedeatildescriprtion: error.detailedDescription,
+	statuscode: vars.httpStatus
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="ed7b7cbc-e5e0-40b9-8f37-a834bb217417" type="STREAM_MAXIMUM_SIZE_EXCEEDED">
+				<set-variable value="#[405]" doc:name="Set Variable" doc:id="5b0d8fc6-bdfc-43f2-b74b-a0418757b762" variableName="httpStatus"/>
+				<ee:transform doc:name="Transform Message" doc:id="a1ecded1-8b91-497c-8361-789967f94709" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	errorMessage: error.description,
+	errorMessagedeatildescriprtion: error.detailedDescription,
+	statuscode: vars.httpStatus
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="38b6c014-3ae7-450e-b28a-b5b19b5043b4" type="ANY">
+				<set-variable value="#[500]" doc:name="Set Variable" doc:id="19ce5299-7770-467d-a71a-be3f2e7daf5a" variableName="httpStatus"/>
+				<ee:transform doc:name="Transform Message" doc:id="885c8474-ce27-43bd-b8bd-5bf9a4154341" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	errorMessage: error.description,
+	errorMessagedeatildescriprtion: error.detailedDescription,
+	statuscode: vars.httpStatus
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>
